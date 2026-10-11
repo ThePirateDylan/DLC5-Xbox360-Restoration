@@ -1,47 +1,43 @@
-# Zombies Declassified
+# Zombies Declassified — Xbox 360 Restoration
 
-Zombies Declassified is a work in progress PC port of Black Ops 2's unreleased DLC 5.
+Zombies Declassified is a work-in-progress restoration and improvement project for the leaked Xbox 360 alpha build of Black Ops II's unreleased DLC 5.
 
-The maps are ported, polished, and bug fixed to provide as close to an official release
-experience as possible, as if Treyarch had seen them through to completion.
+The project aims to bring the Xbox 360 build closer to the polished experience envisioned for a completed release by using Plutonium's DLC5 project as a reference for relevant bug fixes, corrected textures, and other improvements. These fixes and assets are being adapted and backported where appropriate to suit the original Xbox 360 version, while preserving its platform-specific features and original design.
 
-This is a mod compatible with [Plutonium](https://plutonium.pw), with full singleplayer
-and multiplayer support.
+The goal is to create the most complete and polished version of DLC 5 possible on Xbox 360, building on the original alpha rather than simply recreating the PC port.
 
-## Current Progress:
+## Current Progress
 
-| Map               | Completion         |
-|-------------------|--------------------|
-| Nacht der Untoten | `█████████▌` 95%   |
-| Verrückt          | `█████████▌` 95%   |
-| Shi No Numa       | `█████████▌` 95%   |
-| Der Riese         | `█████████▌` 95%   |
-| Kino der Toten    | `█████████▌` 95%   |
-| "Five"            | `█████████░` 80%   |
-| Ascension         | `█████████░` 80%   |
-| Shangri-La        | `█████████░` 80%   |
-| Moon              | `█████████░` 80%   |
-| Call of the Dead  | `█████░░░░░` 50%   |
+| Component | Status |
+|---|---|
+| Original Xbox 360 DLC 5 alpha | Restoration in progress |
+| Texture corrections and backports | In progress |
+| Bug fixes based on Plutonium's work | In progress |
+| Map-specific improvements | In progress |
+| Xbox 360 compatibility and stability | In progress |
 
-## Release Dates:
+*Progress percentages and individual map statuses will be added as development advances.*
 
-**Late September:** the final release, with full Solo EE support, Grief, Call of the Dead, and the full project source.
+## Project Goals
 
-## Installation Requirements:
+- **Texture restoration:** Port appropriate texture corrections and improvements from Plutonium's DLC5 work to the Xbox 360 build.
+- **Bug fixes:** Adapt relevant fixes to address issues in the original Xbox 360 alpha.
+- **Authenticity:** Preserve the original Xbox 360 experience, including its platform-specific assets and features.
+- **Polish:** Improve stability, consistency, and overall gameplay while staying faithful to the original maps.
+- **Preservation:** Document the restoration process and maintain project-specific code and documentation.
 
-You'll need the full Steam release of
-[Black Ops II](https://store.steampowered.com/app/202970/Call_of_Duty_Black_Ops_II/)
-with all DLC, and the [Plutonium](https://plutonium.pw/) client.
+## Installation Requirements
 
-## About this repository:
+Requirements and installation instructions will be documented as the project progresses. A compatible Xbox 360 setup and the appropriate legally obtained game files may be required.
 
-This repository carries the project's own code and documentation only. It
-contains no game assets, no leaked files, and nothing extracted from them. Don't ask, and don't share the leaked build anywhere.
+## About This Repository
 
-Bugs and feedback: [issues](../../issues) here, or the CodModding Discord https://discord.gg/wWGNqUEg9.
+This repository contains the project's own code, tools, and documentation, as applicable. It does not host leaked game builds or redistribute proprietary game assets. Please do not submit leaked files or copyrighted game assets through issues or pull requests.
+
+Plutonium's DLC5 work is used as a reference for compatible fixes and improvements. Credit for original work belongs to its respective creators; see [CREDITS.md](CREDITS.md).
+
+Bugs and feedback: [Open an issue](../../issues).
 
 ---
 
-Fan project, not affiliated with or endorsed by Activision or Treyarch.
-Requires a legally-purchased copy of Call of Duty: Black Ops II (PC) and Plutonium. See
-[CREDITS.md](CREDITS.md).
+Fan-made restoration project. Not affiliated with, endorsed by, or supported by Activision, Treyarch, or the Plutonium team. All trademarks and copyrights belong to their respective owners.
