@@ -1,24 +1,28 @@
 # Zombies Declassified — Xbox 360 Restoration
 
-A work-in-progress project to backport selected DLC5 fixes and improvements to the Xbox 360 version of Call of Duty: Black Ops II. Plutonium is a reference for fixes; Xenia may be used to test Xbox 360 behavior and compatibility. Console-specific testing remains necessary.
+A work-in-progress project to adapt selected fixes and imporvements from Zombies Declassified / Plutonium Beta 2 for Call of Duty: Black Ops II Zombies.
 
 ## Goal
 
-Produce a small, files-only update that can be copied into an existing Xbox 360 game installation with Aurora File Manager. This repository will not ship a PC installer, a full game, or proprietary DLC5 assets.
-
-The backport should preserve Xbox 360-specific behavior and use only fixes that can be adapted to the console build. Xenia-related fixes and test notes should be kept when they affect compatibility.
+The goal is to provide a small, files-only update that can eventually be transferred into an existing Xbox 360 game installation using Aurora File Manager, without requiring a separate GSC loader.
+The project prioritizes compatibility with the original Xbox 360 game, preserving its existing startup behavior, and adapting only fixes that can be supported by the console environment.
 
 ## Current state
 
-- The current checkout does not yet contain Xbox 360 DLC5 source files or a finished payload.
-- The former PC updater and PC server instructions were removed from this working branch; they remain available on `main`.
-- Package paths and install instructions will be finalized after checking the target Xbox 360 game layout.
+- Xbox 360 backport development is ongoing.
+- An experimental FastFile candidate has been built with a subset of the identified Beta 2 script modules.
+- Build-level checks have passed for the current candidate, including Xbox-target script compilation, static-linking, script slot-size checks, and FastFile repacking and decoding.
+- The patched executable's compatibility with the candidate has not been confirmed.
+- Xbox 360 boot and in-game Zombies functionality remain unverified.
+- Additional script hooks, map-specific work, and compatible assets may still be required.
 
-## Local working files
+## Compatibility and Limitations
 
-Use `local-input/` for privately supplied source files and Xenia test material. Use `package/staging/` for the project files that are ready to be packaged, preserving their paths relative to the game directory. Use `dist/` for generated transfer packages. These paths are ignored by Git so game files and generated packages are not accidentally committed.
+This is a partial back port of an unfinished upstream project. Not every PC-side fix can be transferred to Xbox 360.
 
-Only add files needed for the backport. Keep original game files and backups in their existing locations; do not put them in the repository or its history.
+Some features may requires unavailable Plutonium APIs, console-compatible script hooks, map-specific changes, or assets built for the Xbox 360 version. Features that cannot be adapted reliably may remain unsupported. 
+
+Xenia may be useful for preliminary compatibility testing, but successful emulator testing would not replace testing on real Xbox 360 hardware.
 
 ## Credits and scope
 
