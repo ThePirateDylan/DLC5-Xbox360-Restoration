@@ -206,7 +206,7 @@ $installLines = @(
     '',
     'The two patched launchers are side by side. Start with default_mp_patched.xex from the test copy using Aurora File Manager; do not replace default_mp.xex. default_mp_nosound.xex is the alternate owner-provided launcher for a separate comparison test.',
     '',
-    'First confirm the world-map UI lists the DLC5 maps and that each of the 9 maps reaches gameplay without FastFile/IPAK/script errors. The map named zm_prototype is Nacht der Untoten. Then use Custom Games to check Beta 2 changes: on Moon (zm_moon), check Area 51 perks from the start and reduced hacked wall-buy ammo pricing; on Shangri-La (zm_temple), check the grenade wall-buy gives Semtex while the spawn grenade remains a frag.',
+    'First confirm the world-map UI lists the DLC5 maps and that each of the 9 maps reaches gameplay without FastFile/IPAK/script errors. The map named zm_prototype is Nacht der Untoten. For the Beta 2 behavior checks, choose Zombies from the game main menu, then select Custom Games within the Zombies menu (not Multiplayer Custom Games). On Moon (zm_moon), check Area 51 perks from the start and reduced hacked wall-buy ammo pricing; on Shangri-La (zm_temple), check the grenade wall-buy gives Semtex while the spawn grenade remains a frag.',
     '',
     'Record any launch/load error, crash, missing asset, or behavior difference. If a test fails, discard the test copy or restore its changed files from the backups. The original installation is not part of this package.',
     '',

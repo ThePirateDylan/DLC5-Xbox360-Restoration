@@ -37,7 +37,7 @@ Other Beta 2 changes involve edits to map FastFiles or platform-specific models,
 2. Back up any existing files in the test copy's game root, then copy every file under package `game-root/` into that root, preserving filenames. Keep the base game's `base.ipak` and all other base files in place.
 3. Launch `default_mp_patched.xex` from the test copy with Aurora File Manager. Do not replace or launch `default_mp.xex` for the first Beta 2 test. `default_mp_nosound.xex` is included for a separate comparison run.
 4. Check that the world-map UI lists the DLC5 maps and that each of the nine maps loads without FastFile, IPak, missing-asset, or script errors. `zm_prototype` is Nacht der Untoten.
-5. In Custom Games, check Moon (`zm_moon`) for Area 51 perks from the start and reduced hacked wall-buy ammo pricing. On Shangri-La (`zm_temple`), check that the grenade wall-buy gives Semtex while the spawn grenade remains a frag.
+5. Choose Zombies from the game main menu, then select Custom Games within the Zombies menu (not Multiplayer Custom Games). On Moon (`zm_moon`), check Area 51 perks from the start and reduced hacked wall-buy ammo pricing. On Shangri-La (`zm_temple`), check that the grenade wall-buy gives Semtex while the spawn grenade remains a frag.
 6. Record any launch/load error, crash, missing asset, or behavior difference. If a test fails, discard the test copy or restore its changed files from the backups.
 
 ## Project state
