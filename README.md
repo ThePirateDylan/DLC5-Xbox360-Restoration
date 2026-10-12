@@ -1,12 +1,12 @@
 # Zombies Declassified — Xbox 360 Restoration
 
-A work-in-progress project to backport selected DLC5 fixes and improvements to the Xbox 360 version of Call of Duty: Black Ops II. Plutonium is a reference for fixes; Xenia may be used to test Xbox 360 behavior and compatibility. Console-specific testing remains necessary.
+A work-in-progress project to backport selected DLC5 fixes and improvements to the Xbox 360 version of Call of Duty: Black Ops II. Plutonium is a reference for fixes; Xenia may be used for preliminary compatibility testing. Console-specific testing remains necessary.
 
 ## Goal
 
-Produce a small, files-only update that can be copied into an existing Xbox 360 game installation with Aurora File Manager. This repository will not ship a PC installer, a full game, or proprietary DLC5 assets.
+Produce a small, files-only update that can be copied into an existing Xbox 360 game installation with Aurora File Manager, without requiring a separate GSC loader. This repository will not ship a PC installer, a full game, or proprietary DLC5 assets.
 
-The backport should preserve Xbox 360-specific behavior and use only fixes that can be adapted to the console build. Xenia-related fixes and test notes should be kept when they affect compatibility.
+The backport should preserve Xbox 360-specific behavior and use only fixes that can be adapted to the console build.
 
 ## Current test candidate
 
@@ -38,7 +38,11 @@ Bars show separate deliverables. Passing file and compiler checks does not mean 
 
 These counts cover the 25 excluded Beta 2 script modules. Other Beta 2 changes also modify map assets and platform-specific models, textures, animations, audio, localization, and menus. Those PC files cannot be copied into an Xbox package as-is. The current overlay contains the available Xbox DLC5 map files and earlier Xbox UI/support candidates, but not all Beta 2 asset changes. The next asset work is to compare the remaining changes against Xbox source files, make Xbox-compatible asset edits or rebuilds, and validate them map by map. The [candidate status document](docs/xbox360-test-candidate-status.md) has the detailed module list and manual test checklist.
 
-The `main` branch changes are already in this checkout's history. The active branch is one checkpoint commit ahead of `main`; no merge is needed for this work.
+## Compatibility and limitations
+
+This is a partial backport of an unfinished upstream project. Some features need Plutonium APIs, Xbox-compatible script hooks, map-specific changes, or console-built assets. Features that cannot be adapted reliably may remain unsupported. Passing emulator tests would not replace testing on real Xbox 360 hardware.
+
+The `main` branch is already in this branch's history; no merge from `main` is needed for this candidate.
 
 ## Local working files
 
