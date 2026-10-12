@@ -1,43 +1,25 @@
 # Zombies Declassified — Xbox 360 Restoration
 
-Zombies Declassified is a work-in-progress restoration and improvement project for the leaked Xbox 360 alpha build of Black Ops II's unreleased DLC 5.
+A work-in-progress project to backport selected DLC5 fixes and improvements to the Xbox 360 version of Call of Duty: Black Ops II. Plutonium is a reference for fixes; Xenia may be used to test Xbox 360 behavior and compatibility. Console-specific testing remains necessary.
 
-The project aims to bring the Xbox 360 build closer to the polished experience envisioned for a completed release by using Plutonium's DLC5 project as a reference for relevant bug fixes, corrected textures, and other improvements. These fixes and assets are being adapted and backported where appropriate to suit the original Xbox 360 version, while preserving its platform-specific features and original design.
+## Goal
 
-The goal is to create the most complete and polished version of DLC 5 possible on Xbox 360, building on the original alpha rather than simply recreating the PC port.
+Produce a small, files-only update that can be copied into an existing Xbox 360 game installation with Aurora File Manager. This repository will not ship a PC installer, a full game, or proprietary DLC5 assets.
 
-## Current Progress
+The backport should preserve Xbox 360-specific behavior and use only fixes that can be adapted to the console build. Xenia-related fixes and test notes should be kept when they affect compatibility.
 
-| Component | Status |
-|---|---|
-| Original Xbox 360 DLC 5 alpha | Restoration in progress |
-| Texture corrections and backports | In progress |
-| Bug fixes based on Plutonium's work | In progress |
-| Map-specific improvements | In progress |
-| Xbox 360 compatibility and stability | In progress |
+## Current state
 
-*Progress percentages and individual map statuses will be added as development advances.*
+- The current checkout does not yet contain Xbox 360 DLC5 source files or a finished payload.
+- The former PC updater and PC server instructions were removed from this working branch; they remain available on `main`.
+- Package paths and install instructions will be finalized after checking the target Xbox 360 game layout.
 
-## Project Goals
+## Local working files
 
-- **Texture restoration:** Port appropriate texture corrections and improvements from Plutonium's DLC5 work to the Xbox 360 build.
-- **Bug fixes:** Adapt relevant fixes to address issues in the original Xbox 360 alpha.
-- **Authenticity:** Preserve the original Xbox 360 experience, including its platform-specific assets and features.
-- **Polish:** Improve stability, consistency, and overall gameplay while staying faithful to the original maps.
-- **Preservation:** Document the restoration process and maintain project-specific code and documentation.
+Use `local-input/` for privately supplied source files and Xenia test material. Use `package/staging/` for the project files that are ready to be packaged, preserving their paths relative to the game directory. Use `dist/` for generated transfer packages. These paths are ignored by Git so game files and generated packages are not accidentally committed.
 
-## Installation Requirements
+Only add files needed for the backport. Keep original game files and backups in their existing locations; do not put them in the repository or its history.
 
-Requirements and installation instructions will be documented as the project progresses. A compatible Xbox 360 setup and the appropriate legally obtained game files may be required.
+## Credits and scope
 
-## About This Repository
-
-This repository contains the project's own code, tools, and documentation, as applicable. It does not host leaked game builds or redistribute proprietary game assets. Please do not submit leaked files or copyrighted game assets through issues or pull requests.
-
-Plutonium's DLC5 work is used as a reference for compatible fixes and improvements. Credit for original work belongs to its respective creators; see [CREDITS.md](CREDITS.md).
-
-Bugs and feedback: [Open an issue](../../issues).
-
----
-
-Fan-made restoration project. Not affiliated with, endorsed by, or supported by Activision, Treyarch, or the Plutonium team. All trademarks and copyrights belong to their respective owners.
+See [CREDITS.md](CREDITS.md) for attribution. This is an unofficial fan project and is not affiliated with Activision, Treyarch, or the Plutonium team. All trademarks and copyrights belong to their respective owners.
