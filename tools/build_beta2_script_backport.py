@@ -4,7 +4,9 @@
 This tool only edits a copied unpacked FastFile under local-input. It never edits
 the input FastFile, input scan, or the Aurora staging directory. New Beta 2 script
 functions are namespaced and folded into existing ScriptParseTree assets, then
-started from the stock Zombies GSC/CSC init entrypoints.
+started from the stock Zombies GSC/CSC init entrypoints. Existing scan files may
+be hard-linked to save disk space; every modified file is replaced atomically so
+the input scan remains unchanged.
 """
 from __future__ import annotations
 
@@ -33,10 +35,33 @@ EXCLUDED_FILES = {
     "zzz_zm_gravitywatch.gsc": "diagnostic probe",
     "zzz_zm_whereami.gsc": "diagnostic probe",
 }
+ASSET_CHECK_REQUIRED = {
+    "zzz_zm_m27box.gsc": (
+        "static stock-function calls are available, but the Xbox hk416_zm weapon variant and its sound/localization assets "
+        "are not verified in the supplied FastFiles; the PC assets cannot be transplanted"
+    ),
+}
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def atomic_write(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix=f".{path.name}.", dir=path.parent, delete=False) as stream:
+            temp_path = Path(stream.name)
+            stream.write(payload)
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    atomic_write(path, text.encode("utf-8"))
 
 
 def compile_source(text: str, basename: str, instance: str, tool: Path, temp_root: Path) -> bytes:
@@ -153,6 +178,17 @@ def apply_static_compatibility(filename: str, text: str) -> tuple[str, list[str]
             '\tbest maps\\mp\\zombies\\_zm_audio::create_and_play_dialog( "level", key );\n\tprintln( "PERKVO >> " + key + " reveal line played (dist " + int( bestd ) + ")" );',
             "static create_and_play_dialog method call",
             re.DOTALL,
+        )
+    elif filename in ("zzz_zm_m27box.gsc", "zzz_zm_mk2box.gsc"):
+        sub_once(
+            r'\tinc = getfunction\( "maps/mp/zombies/_zm_utility", "include_weapon" \);',
+            '\tinc = maps\\mp\\zombies\\_zm_utility::include_weapon;',
+            "static _zm_utility::include_weapon function reference",
+        )
+        sub_once(
+            r'\tadd = getfunction\( "maps/mp/zombies/_zm_weapons", "add_zombie_weapon" \);',
+            '\tadd = maps\\mp\\zombies\\_zm_weapons::add_zombie_weapon;',
+            "static _zm_weapons::add_zombie_weapon function reference",
         )
     elif filename == "zzz_zm_bowiebuy.gsc":
         sub_once(
@@ -309,6 +345,11 @@ def main() -> int:
     parser.add_argument("--out-ff", type=Path, required=True, help="new, non-existing test FastFile output under local-input")
     parser.add_argument("--verify-dir", type=Path, required=True, help="new, non-existing candidate decode output under local-input")
     parser.add_argument("--reserve", type=int, default=768, help="bytes reserved in each script slot for dispatcher overhead")
+    parser.add_argument(
+        "--hardlink-scan",
+        action="store_true",
+        help="hard-link unchanged scan files into the output copy to reduce disk use",
+    )
     args = parser.parse_args()
 
     root = Path.cwd()
@@ -342,7 +383,7 @@ def main() -> int:
 
     include: list[dict] = []
     excluded: dict[str, str] = {}
-    api_pattern = re.compile(r"\b(" + "|".join(BLOCKED_APIS) + r")\b", re.IGNORECASE)
+    api_pattern = re.compile(r"\b(" + "|".join(BLOCKED_APIS) + r")\s*\(", re.IGNORECASE)
     for module_path in sorted(sources.iterdir()):
         if module_path.suffix.lower() not in (".gsc", ".csc"):
             continue
@@ -355,6 +396,9 @@ def main() -> int:
         api = api_pattern.search(original)
         if api:
             excluded[module_path.name] = f"requires non-stock API: {api.group(1)}"
+            continue
+        if module_path.name in ASSET_CHECK_REQUIRED:
+            excluded[module_path.name] = ASSET_CHECK_REQUIRED[module_path.name]
             continue
         try:
             merged_text, init_name = namespace_module(effective_path, original)
@@ -434,7 +478,7 @@ def main() -> int:
     if hosts[dispatcher_host]["instance"] != "server":
         raise RuntimeError("server dispatcher was assigned to a client script")
 
-    shutil.copytree(scan, out_scan)
+    shutil.copytree(scan, out_scan, copy_function=os.link if args.hardlink_scan else shutil.copy2)
     output_zone = bytearray((out_scan / "zone_decompressed.dat").read_bytes())
     original_zone = (scan / "zone_decompressed.dat").read_bytes()
     baseline_payloads: dict[str, bytes] = {}
@@ -568,19 +612,17 @@ def main() -> int:
     for script_name, source_text in edited_sources.items():
         source_path = out_scan / "scripts_src" / Path(script_name)
         source_path.parent.mkdir(parents=True, exist_ok=True)
-        source_path.write_text(source_text, encoding="utf-8", newline="\n")
+        atomic_write_text(source_path, source_text)
         records[script_name]["source_path"] = str(source_path)
         records[script_name]["source_sha256"] = sha256(source_text.encode("utf-8"))
-    (out_scan / "embedded_scripts.json").write_text(
-        json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
-    )
+    atomic_write_text(out_scan / "embedded_scripts.json", json.dumps(metadata, indent=2) + "\n")
 
     # Validate newly introduced qualified imports against the rebuilt shared
     # zone's script table before repacking.
     sys.path.insert(0, str(unpacker.parent))
     import gsc_link  # type: ignore
 
-    (out_scan / "zone_decompressed.dat").write_bytes(output_zone)
+    atomic_write(out_scan / "zone_decompressed.dat", bytes(output_zone))
     index = gsc_link.index_scripts([out_scan])
     link_reports = {}
     all_builtins: set[str] = set()
@@ -633,10 +675,29 @@ def main() -> int:
         "new_unqualified_imports_to_verify_in_XEX": sorted(all_builtins),
         "link_reports": link_reports,
         "zone_sha256": sha256(bytes(output_zone)),
+        "build_provenance": {
+            "builder_sha256": sha256(Path(__file__).read_bytes()),
+            "gsc_tool_version": subprocess.run(
+                [str(tool), "--version"], capture_output=True, text=True, timeout=30
+            ).stdout.strip().splitlines()[0],
+            "gsc_tool_sha256": sha256(tool.read_bytes()),
+            "unpacker_sha256": sha256(unpacker.read_bytes()),
+            "input_zone_sha256": sha256((scan / "zone_decompressed.dat").read_bytes()),
+            "input_embedded_scripts_sha256": sha256(metadata_path.read_bytes()),
+            "input_ff_header_sha256": sha256((scan / "ff_header.bin").read_bytes()),
+            "beta2_source_sha256": {
+                path.name: sha256(path.read_bytes())
+                for path in sorted(sources.iterdir())
+                if path.suffix.lower() in (".gsc", ".csc")
+            },
+            "xbox_override_sha256": {
+                path.name: sha256(path.read_bytes())
+                for path in sorted(xbox_overrides.iterdir())
+                if path.suffix.lower() in (".gsc", ".csc")
+            } if xbox_overrides else {},
+        },
     }
-    (out_scan / "beta2_script_backport_manifest.json").write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-    )
+    atomic_write_text(out_scan / "beta2_script_backport_manifest.json", json.dumps(manifest, indent=2) + "\n")
 
     # Repack only to a new path and immediately decode it back for a byte-exact
     # zone comparison. The generated TAffu100 signature slot is intentionally
@@ -671,9 +732,7 @@ def main() -> int:
     manifest["candidate_sha256"] = sha256(out_ff.read_bytes())
     manifest["roundtrip_zone_sha256"] = sha256(decoded_zone)
     manifest["roundtrip_exact"] = True
-    (out_scan / "beta2_script_backport_manifest.json").write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-    )
+    atomic_write_text(out_scan / "beta2_script_backport_manifest.json", json.dumps(manifest, indent=2) + "\n")
 
     changed_assets = len(changed)
     print(f"Integrated {len(include)} compatible Beta 2 script modules into {changed_assets} existing script assets.")

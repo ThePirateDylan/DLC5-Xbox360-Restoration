@@ -10,7 +10,7 @@ The public [BO2 GSC Live Injector](https://github.com/Ticass/bo2-xenia-gsc-live-
 
 ## Current no-extra-loader candidate
 
-The test-only `patch_zm.ff` candidate integrates 46 Beta 2 modules into existing server/client scripts and adds dispatch calls to `_zm.gsc::init()` and `_zm.csc::init()`. This is a static in-game bootstrap, not the Tesseract DLL or Xenia injector path described above. Selected `GetFunction` lookups are rewritten to statically imported stock script functions; modules requiring unresolved Plutonium hooks or map-specific replacement work remain excluded. See `plutonium-backport.md` and the candidate manifest for the current list.
+The test-only `patch_zm.ff` candidate integrates 47 Beta 2 modules into existing server/client scripts and adds dispatch calls to `_zm.gsc::init()` and `_zm.csc::init()`. This is a static in-game bootstrap, not the Tesseract DLL or Xenia injector path described above. Selected `GetFunction` lookups are rewritten to statically imported stock script functions; modules requiring unresolved Plutonium hooks, unverified supporting assets, or map-specific replacement work remain excluded. See `plutonium-backport.md` and `docs/xbox360-test-candidate-status.md` for the current list.
 
 The candidate's GSC/CSC compilation, slot fitting, static link checks, and FastFile decode/repack round trip pass. The generated FastFile uses an unsigned TAffu100/dev-loader-style representation, and neither Xenia nor the user's Xbox has confirmed that the patched XEX accepts it or loads it from the intended location. So the in-game startup code exists, but its execution is not yet proven.
 
@@ -36,7 +36,7 @@ Sources:
 
 ## Work still required
 
-The user's workflow is to launch `default_mp_patched.xex` manually; we are not assuming that it contains a separate custom GSC loader. The next check is whether that XEX loads the rebuilt `patch_zm.ff` from the correct game path. Until confirmed, the test candidate must stay out of `package/staging/`.
+The user's workflow is to launch `default_mp_patched.xex` manually; we are not assuming that it contains a separate custom GSC loader. The local test package now includes the DLC5 map files and support assets alongside the rebuilt `patch_zm.ff`. The next check is whether that XEX loads the package from the correct game path. Until confirmed, this remains a test-only candidate, not a verified console release.
 
 For asset-only fixes—weapon models, textures, animations, audio, localization, and menu assets—the PC Beta 2 `.ff`/`.ipak` data cannot be copied to Xbox 360. The project still needs Xbox-compatible asset conversion/rebuild work and runtime checks per map. No Plutonium fix is currently marked as verified on console or Xenia.
 

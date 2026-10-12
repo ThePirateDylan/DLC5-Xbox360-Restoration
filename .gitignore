@@ -1,3 +1,6 @@
 /local-input/
 /package/staging/
 /dist/
+/compiled/
+__pycache__/
+*.py[cod]
