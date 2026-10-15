@@ -12,7 +12,7 @@ The public [BO2 GSC Live Injector](https://github.com/Ticass/bo2-xenia-gsc-live-
 
 The test-only `patch_zm.ff` candidate integrates 47 Beta 2 modules into existing server/client scripts and adds dispatch calls to `_zm.gsc::init()` and `_zm.csc::init()`. This is a static in-game bootstrap, not the Tesseract DLL or Xenia injector path described above. Selected `GetFunction` lookups are rewritten to statically imported stock script functions; modules requiring unresolved Plutonium hooks, unverified supporting assets, or map-specific replacement work remain excluded. See `plutonium-backport.md` and `docs/xbox360-test-candidate-status.md` for the current list.
 
-The candidate's GSC/CSC compilation, slot fitting, static link checks, and FastFile decode/repack round trip pass. The generated FastFile uses an unsigned TAffu100/dev-loader-style representation, and neither Xenia nor the user's Xbox has confirmed that the patched XEX accepts it or loads it from the intended location. So the in-game startup code exists, but its execution is not yet proven.
+The broad 47-module and one-module `TAffu100` FastFiles black-screened on the user's Xbox. The four-module XMem/LZX `TAffx100` candidate also black-screened; its 256-byte signature was copied from the original and not regenerated. That package is withdrawn. Exact local decoding does not validate the Xbox loader, container authentication, or script startup. Establish whether the supplied XEX bypasses FastFile signature checks, or find another supported runtime route, before producing another candidate. See `fastfile-container-investigation.md`.
 
 ## Why compiling scripts alone was not a backport
 

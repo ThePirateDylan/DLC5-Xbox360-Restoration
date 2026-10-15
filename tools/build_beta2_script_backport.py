@@ -339,11 +339,23 @@ def main() -> int:
     parser.add_argument("--scan", type=Path, required=True, help="unpacked patch_zm scan with scripts_src/ and zone_decompressed.dat")
     parser.add_argument("--sources", type=Path, required=True, help="local Beta 2 script source folder")
     parser.add_argument("--xbox-overrides", type=Path, help="optional folder of Xbox-compatible replacements for source files")
+    parser.add_argument(
+        "--include-module",
+        action="append",
+        default=[],
+        help="restrict this build to the named GSC/CSC module; repeat for multiple modules (default: all compatible modules)",
+    )
     parser.add_argument("--gsc-tool", type=Path, required=True, help="gsc-tool executable")
     parser.add_argument("--unpacker", type=Path, required=True, help="Crybaby xbox360_ff_unpacker.py")
     parser.add_argument("--out-scan", type=Path, required=True, help="new, non-existing copied scan output under local-input")
     parser.add_argument("--out-ff", type=Path, required=True, help="new, non-existing test FastFile output under local-input")
     parser.add_argument("--verify-dir", type=Path, required=True, help="new, non-existing candidate decode output under local-input")
+    parser.add_argument(
+        "--compression",
+        choices=("deflate", "lzx"),
+        default="deflate",
+        help="FastFile container codec: deflate emits unsigned TAffu100; lzx emits TAffx100 using XNA XMem",
+    )
     parser.add_argument("--reserve", type=int, default=768, help="bytes reserved in each script slot for dispatcher overhead")
     parser.add_argument(
         "--hardlink-scan",
@@ -364,6 +376,20 @@ def main() -> int:
     temp_root = (root / "local-input" / "crybaby-test" / "tmp").resolve()
     temp_root.mkdir(parents=True, exist_ok=True)
 
+    xna_native_md5 = None
+    if args.compression == "lzx":
+        native_dir = Path(os.environ.get("XNA_NATIVE_DIR", "")).resolve()
+        native_dll = native_dir / "XnaNative.dll"
+        if not native_dll.is_file():
+            raise RuntimeError("--compression lzx requires XNA_NATIVE_DIR to point to a folder containing XnaNative.dll")
+        xna_native_md5 = hashlib.md5(native_dll.read_bytes()).hexdigest()
+        supported_xna_native_md5 = {
+            "993d6b608c47e867bcf10a064ff2d61a",  # XNA 4.0.20823.0
+            "cbffc669518ee511890f236fefffb4c1",  # XNA 4.0.30901.0
+        }
+        if xna_native_md5 not in supported_xna_native_md5:
+            raise RuntimeError(f"Unsupported XnaNative.dll MD5 for the XMem helper: {xna_native_md5}")
+
     for path in (scan, sources, tool, unpacker):
         if not path.exists():
             raise FileNotFoundError(path)
@@ -383,9 +409,21 @@ def main() -> int:
 
     include: list[dict] = []
     excluded: dict[str, str] = {}
+    source_modules = {
+        path.name
+        for path in sources.iterdir()
+        if path.suffix.lower() in (".gsc", ".csc")
+    }
+    requested_modules = set(args.include_module)
+    unknown_modules = requested_modules - source_modules
+    if unknown_modules:
+        raise RuntimeError("requested module(s) not found in source folder: " + ", ".join(sorted(unknown_modules)))
     api_pattern = re.compile(r"\b(" + "|".join(BLOCKED_APIS) + r")\s*\(", re.IGNORECASE)
     for module_path in sorted(sources.iterdir()):
         if module_path.suffix.lower() not in (".gsc", ".csc"):
+            continue
+        if requested_modules and module_path.name not in requested_modules:
+            excluded[module_path.name] = "not selected for this targeted candidate"
             continue
         if module_path.name in EXCLUDED_FILES:
             excluded[module_path.name] = EXCLUDED_FILES[module_path.name]
@@ -417,6 +455,12 @@ def main() -> int:
             "estimated_bytes": len(payload),
         })
 
+    if requested_modules:
+        included_names = {module["name"] for module in include}
+        rejected_requested = requested_modules - included_names
+        if rejected_requested:
+            reasons = "; ".join(f"{name}: {excluded.get(name, 'not compiled')}" for name in sorted(rejected_requested))
+            raise RuntimeError("requested module(s) were not eligible for this candidate: " + reasons)
     if not include:
         raise RuntimeError("no compatible Beta 2 script modules were found")
     has_ambflies_module = any(module["name"] == "zzz_zm_ambflies.gsc" for module in include)
@@ -654,6 +698,8 @@ def main() -> int:
     out_scan.mkdir(parents=True, exist_ok=True)
     manifest = {
         "purpose": "test-only script backport; not a console-verified package",
+        "compression_requested": args.compression,
+        "console_fastfile_validation": "pending",
         "scan_input": str(scan),
         "source_input": str(sources),
         "included_modules": [module["name"] for module in include],
@@ -700,10 +746,10 @@ def main() -> int:
     atomic_write_text(out_scan / "beta2_script_backport_manifest.json", json.dumps(manifest, indent=2) + "\n")
 
     # Repack only to a new path and immediately decode it back for a byte-exact
-    # zone comparison. The generated TAffu100 signature slot is intentionally
-    # unsigned; the patched XEX/console must still be proven to accept it.
+    # zone comparison. Deflate emits unsigned TAffu100; LZX emits authenticated-
+    # format TAffx100 but currently reuses the original signature without signing.
     result = subprocess.run(
-        [sys.executable, str(unpacker), "--repack", str(out_scan), "--no-recompile", "--compression", "deflate", "-o", str(out_ff)],
+        [sys.executable, str(unpacker), "--repack", str(out_scan), "--no-recompile", "--compression", args.compression, "-o", str(out_ff)],
         cwd=root,
         capture_output=True,
         text=True,
@@ -732,6 +778,32 @@ def main() -> int:
     manifest["candidate_sha256"] = sha256(out_ff.read_bytes())
     manifest["roundtrip_zone_sha256"] = sha256(decoded_zone)
     manifest["roundtrip_exact"] = True
+    candidate_bytes = out_ff.read_bytes()
+    signature = candidate_bytes[0x38:0x138]
+    source_header = (out_scan / "ff_header.bin").read_bytes()
+    if args.compression == "lzx":
+        signature_state = "copied_from_original_not_regenerated"
+        signature_validity = "unverified"
+        if signature != source_header[0x38:0x138]:
+            raise RuntimeError("LZX output signature region does not match the original header")
+    else:
+        signature_state = "zeroed_unsigned"
+        signature_validity = "not_applicable_unsigned"
+        if any(signature):
+            raise RuntimeError("deflate TAffu100 output unexpectedly contains nonzero signature bytes")
+    expected_magic = b"TAffx100" if args.compression == "lzx" else b"TAffu100"
+    if candidate_bytes[:8] != expected_magic:
+        raise RuntimeError(f"unexpected FastFile magic for {args.compression}: {candidate_bytes[:8]!r}")
+    manifest["container_provenance"] = {
+        "compression": "XMem LZX" if args.compression == "lzx" else "raw DEFLATE",
+        "magic": expected_magic.decode("ascii"),
+        "auth_header_flag": args.compression == "lzx",
+        "signature_state": signature_state,
+        "signature_validity": signature_validity,
+        "original_signature_sha256": sha256(source_header[0x38:0x138]),
+        "output_signature_sha256": sha256(signature),
+        "xna_native_md5": xna_native_md5,
+    }
     atomic_write_text(out_scan / "beta2_script_backport_manifest.json", json.dumps(manifest, indent=2) + "\n")
 
     changed_assets = len(changed)
@@ -741,6 +813,8 @@ def main() -> int:
         print(f"Client dispatcher: {client_host_name} -> stock clientscripts/mp/zombies/_zm.csc init()")
     print(f"Skipped {len(excluded)} module(s); reasons are recorded in the local manifest.")
     print(f"FastFile: {out_ff} ({out_ff.stat().st_size} bytes, SHA-256 {manifest['candidate_sha256']})")
+    print(f"Container: {manifest['container_provenance']['magic']} / {manifest['container_provenance']['compression']}")
+    print(f"Signature state: {manifest['container_provenance']['signature_state']}")
     print(f"Exact decode round trip: {manifest['roundtrip_zone_sha256']}")
     if all_builtins:
         print("New unqualified engine imports to verify against this XEX: " + ", ".join(sorted(all_builtins)))

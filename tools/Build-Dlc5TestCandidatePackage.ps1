@@ -40,9 +40,14 @@ $candidateManifestPath = [System.IO.Path]::GetFullPath($CandidateManifestPath)
 $patchedXexPath = [System.IO.Path]::GetFullPath($PatchedXexPath)
 $nosoundXexPath = [System.IO.Path]::GetFullPath($NosoundXexPath)
 $candidateHash = (Get-FileHash -LiteralPath $candidateFastFile -Algorithm SHA256).Hash.ToLowerInvariant()
+$candidateHeader = [System.IO.File]::ReadAllBytes($candidateFastFile)
+$candidateMagic = [System.Text.Encoding]::ASCII.GetString($candidateHeader, 0, 8)
 $candidate = Get-Content -LiteralPath $candidateManifestPath -Raw | ConvertFrom-Json
 if ($candidate.candidate_sha256 -ne $candidateHash) {
     throw "Candidate FastFile hash does not match its build manifest: $candidateHash"
+}
+if ($candidateMagic -ne 'TAffx100' -or $candidate.console_fastfile_validation -ne 'passed') {
+    throw "Refusing to package an unvalidated FastFile for Xbox testing. Candidate magic is $candidateMagic; require a validated console-compatible container and console_fastfile_validation='passed' in the manifest."
 }
 if (-not $candidate.roundtrip_exact) {
     throw 'Candidate manifest does not record a byte-exact FastFile round trip.'
@@ -170,7 +175,7 @@ $storageMode = if ($CopyFiles) { 'Copied into dist as independent files.' } else
 $noteLines = @(
     'Xbox 360 BO2 DLC5 Beta 2 script test candidate',
     '',
-    'This package combines the June world-map/UI candidates, the August Xbox 360 DLC5 maps and shared-support candidates, the owner-provided launchers, and the rebuilt Beta 2 patch_zm FastFile. It is a test package, not a verified console release or full game.',
+    'This package combines the June world-map/UI candidates, the August Xbox 360 DLC5 maps and shared-support candidates, the owner-provided launchers, and the rebuilt Beta 2 patch_zm FastFile. It is not a verified console release or full game, and it has a reported console map-load failure.',
     '',
     'The complete BO2 base game is required. The 2.7 GB base.ipak, debug CoDMP_patched.exe, unverified June load/stream reference bundles, title update, and PC-built FastFiles/IPaks are intentionally excluded. The zm_prototype map is Nacht der Untoten.',
     '',
@@ -187,7 +192,11 @@ $noteLines = @(
     '',
     "File groups:`r`n$($roleLines -join [Environment]::NewLine)",
     '',
-    'The Beta 2 FastFile is an unsigned TAffu100/dev-loader-style build. Whether default_mp_patched.xex accepts it, loads it from the target path, or executes the backported changes has not been confirmed in Xenia or on an Xbox 360. Compilation, static link/slot checks, and round-trip integrity are file-level checks only.',
+    'The Beta 2 FastFile is an unsigned TAffu100/dev-loader-style build. Console testing reported a black screen with this patch. Restoring the original patch_zm.ff alone left stock and DLC5 maps at Awaiting Textures; restoring its matching patch_zm.ipak allowed a stock map and The Giant to load. Compilation, static link/slot checks, and round-trip integrity are file-level checks only; the Beta 2 candidate has failed runtime testing.',
+    '',
+    'Console status update: the owner reports that this Beta 2 patch black-screened. Restoring the original patch_zm.ff alone returned to the menu, but a DLC5 map and a stock Zombies map froze at Awaiting Textures. The owner then copied patch_zm.ipak from the same known-good merged build as the restored FastFile; both a stock map and The Giant loaded. This strongly confirms the shared patch pair caused the texture hang. The Beta 2 FastFile remains a separate runtime failure. Do not rebuild base.ipak based on the resolved texture hang.',
+    '',
+    'Pairing check: this Beta 2 patch_zm.ff was rebuilt from the August shared-support patch zone and is packaged with the August patch_zm.ipak (SHA-256 84cea61461d03ada2278762ff686069639ca076aefeb4d9017c807d7f7f4dcc3). The repository also contains a different June patch_zm.ff/IPak pair. When rolling back, restore both patch_zm.ff and patch_zm.ipak from the same known-good build. Restoring only the FastFile caused stock and DLC5 maps to freeze at Awaiting Textures; restoring its matching IPak restored loading on a stock map and The Giant.',
     '',
     'Included Beta 2 modules:'
 ) + $includedLines + @('', 'Skipped modules and reasons:') + $excludedLines + @('', 'Game-root file list:') + @($packagedNames | Sort-Object | ForEach-Object { "- $_" })
@@ -196,17 +205,17 @@ $noteLines = @(
 $installLines = @(
     'TEST PACKAGE — Xbox 360 Black Ops II DLC5 with Beta 2 script backport',
     '',
-    'This package contains the 9 DLC5 map FastFiles, their 9 IPaks, English map localization, June world-map/UI candidates, August shared-support candidates, both owner-provided launchers, and a Beta 2 script-backported patch_zm.ff. It is not a full game.',
+    'This package contains the 9 DLC5 map FastFiles, their 9 IPaks, English map localization, June world-map/UI candidates, August shared-support candidates, both owner-provided launchers, and a Beta 2 script-backported patch_zm.ff. It is not a full game and is not ready to use: console testing reported a black screen with the candidate patch. Restoring only the original patch FastFile left maps at Awaiting Textures; restoring its matching IPak allowed a stock map and The Giant to load.',
     '',
     'Required: a complete Xbox 360 Black Ops II base installation with its own base-game files (including base.ipak) and a separate test copy. The complete base game and any title update are not included.',
     '',
-    'Before copying, make a separate test copy of the complete game and back up any existing files in its game root. Keep the original game installation untouched.',
+    'Do not copy this overlay over a working game installation. The candidate Beta 2 patch black-screened. In the modified test copy, stock and DLC5 maps loaded after the known-good patch_zm.ff and matching patch_zm.ipak were both restored. Preserve the known-good build and original game installation.',
     '',
-    'Copy every file under game-root into the root of the test copy, preserving each filename. This folder contains all DLC5 map FastFiles/IPaks and the shared/UI assets needed by this candidate.',
+    'The owner has restored the known-good patch_zm.ff and matching patch_zm.ipak; a stock map and The Giant now load. Keep this pair installed while checking the June world-map UI and another DLC5 map. Do not copy the Beta 2 patch_zm.ff back yet: it black-screened and needs a separate fix/retest. Keep base.ipak unchanged; the known-good pair restored loading without rebuilding it.',
     '',
-    'The two patched launchers are side by side. Start with default_mp_patched.xex from the test copy using Aurora File Manager; do not replace default_mp.xex. default_mp_nosound.xex is the alternate owner-provided launcher for a separate comparison test.',
+    'The two owner-provided launchers are distinct executables; neither was changed by the package builder. Their title IDs match, but that does not establish title-update equivalence. For comparisons, use the exact same launcher file as the known-good merged build. Preserve default_mp.xex and do not overwrite the original installation.',
     '',
-    'First confirm the world-map UI lists the DLC5 maps and that each of the 9 maps reaches gameplay without FastFile/IPAK/script errors. The map named zm_prototype is Nacht der Untoten. For the Beta 2 behavior checks, choose Zombies from the game main menu, then select Custom Games within the Zombies menu (not Multiplayer Custom Games). On Moon (zm_moon), check Area 51 perks from the start and reduced hacked wall-buy ammo pricing; on Shangri-La (zm_temple), check the grenade wall-buy gives Semtex while the spawn grenade remains a frag.',
+    'Do not proceed to DLC5 map or Beta 2 gameplay checks until a stock map loads successfully in the modified test copy. The map named zm_prototype is Nacht der Untoten. After shared map loading is fixed, test the world-map UI, all nine map loads, and then Beta 2 behavior: choose Zombies from the game main menu, then Custom Games within Zombies (not Multiplayer Custom Games); on Moon (zm_moon), check Area 51 perks from the start and reduced hacked wall-buy ammo pricing; on Shangri-La (zm_temple), check that the grenade wall-buy gives Semtex while the spawn grenade remains a frag.',
     '',
     'Record any launch/load error, crash, missing asset, or behavior difference. If a test fails, discard the test copy or restore its changed files from the backups. The original installation is not part of this package.',
     '',

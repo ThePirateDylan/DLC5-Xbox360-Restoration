@@ -8,11 +8,15 @@ Produce a small, files-only update that can be copied into an existing Xbox 360 
 
 The backport should preserve Xbox 360-specific behavior and use only fixes that can be adapted to the console build.
 
-## Current test candidate
+## Experimental Beta 2 script candidate
 
-A local test candidate integrates 47 of the 72 Beta 2 GSC/CSC modules into 13 existing Xbox 360 script assets, using the game's existing Zombies startup path. The test package includes the DLC5 map FastFiles/IPaks and localization, June world-map/UI and August shared-support candidates, both owner-provided launchers, and the Beta 2 `patch_zm.ff`. It does not include the full BO2 base game or `base.ipak`. The candidate's scripts compile, static link and slot checks pass, and its FastFile decodes to an exact copy of the rebuilt zone. It has not been tested in Xenia or on an Xbox 360, so patched-XEX loading and gameplay remain unverified.
+A broad local candidate integrates 47 of the 72 Beta 2 GSC/CSC modules into 13 existing Xbox 360 script assets, but it black-screened on console and remains excluded. The one-module Moon candidate also black-screened and is withdrawn. The four-fix Moon candidate used XMem/LZX `TAffx100` and decoded back to the exact edited zone, but it also black-screened in the user's console test. Its signature bytes were copied from the August file, not regenerated. No rebuilt FastFile is currently console-validated. See [the FastFile investigation](docs/fastfile-container-investigation.md). The known-good August `patch_zm.ff` and its matching `.ipak` remain the baseline pair.
 
-See [the current candidate status and test checklist](docs/xbox360-test-candidate-status.md). Build the full local DLC5 test package with `tools/Build-Dlc5TestCandidatePackage.ps1`; it contains 45 game-root files and must be used with a separate copy of a complete base game installation. Its large source assets are hard-linked in `dist/` to avoid a second local copy; copying them to another drive/device transfers the full content.
+The broad 47-module Beta 2 FastFile remains excluded. Its source candidate is local-only in ignored `local-input/` for further debugging. See [the candidate status](docs/xbox360-test-candidate-status.md) for runtime findings.
+
+## Console test package status
+
+The [Moon four-fix LZX test package](dist/ZombiesDeclassified-Xbox360-Moon-4Fix-LZX-Test-20261012/INSTALL.txt) black-screened and is withdrawn; do not copy it again. It contained only `patch_zm.ff` and the matching August `patch_zm.ipak`, with no map art or menu UI. The unchanged signature is the leading suspected cause, though the exact console rejection point is not proven. Beta 2 map art and menu UI remain a separate conversion task; see [the UI asset port notes](docs/beta2-ui-asset-port.md).
 
 ## Progress
 
@@ -20,10 +24,19 @@ Bars show separate deliverables. Passing file and compiler checks does not mean 
 
 | Work area | Progress | State |
 |---|---:|---|
-| Beta 2 script modules integrated | `█████████████░░░░░░░` 47/72 (65%) | 25 modules are held back for the reasons below. |
-| Existing Xbox script payloads compiled, linked, and fit | `████████████████████` 13/13 (100%) | Static import/arity and payload-slot checks pass. |
-| Full DLC5 test package files checksum-verified | `████████████████████` 45/45 (100%) | The package is ready for a separate base-game test copy. |
-| Runtime test in Xenia or on Xbox 360 | `░░░░░░░░░░░░░░░░░░░░` 0/1 (0%) | Launch, FastFile acceptance, and gameplay are still unverified. |
+| Broad candidate Beta 2 script modules integrated (excluded) | `█████████████░░░░░░░` 47/72 (65%) | 25 modules are held back for the reasons below; this candidate black-screened. |
+| Broad candidate Xbox script payloads compiled, linked, and fit | `████████████████████` 13/13 (100%) | Static import/arity and payload-slot checks pass; this is not a runtime result. |
+| Historical Beta 2 package files checksum-verified | `████████████████████` 45/45 (100%) | File checks passed before console testing; the candidate black-screened and its generated package was removed. |
+| Targeted Moon Area 51 script candidate | `████████████████████` 1/1 (100%) | One Beta 2 module compiles and fits, but the package black-screened and is withdrawn. |
+| Follow-on Moon scripts integrated and compiled | `████████████████████` 4/4 (100%) | Four modules statically integrate into existing script assets, with 912 bytes of minimum slot slack. |
+| XMem/LZX FastFile round trip | `████████████████████` 2/2 (100%) | Both decode byte-for-byte locally; the four-fix candidate still black-screened on console, so the local round trip did not validate the loader format or signature. |
+| Shared map loading recovered | `████████████████████` 1/1 (100%) | Restoring the known-good `patch_zm.ff` and matching `.ipak` lets a stock map and The Giant load in the test copy. |
+| Targeted Moon package checksums | `████████████████████` 2/2 (100%) | Checksums passed, but the package black-screened and is withdrawn. |
+| Four-fix Moon package checksums | `████████████████████` 2/2 (100%) | New two-file LZX package checksums pass; original signature bytes were reused and not validated. |
+| Beta 2 world-map UI and art port | `░░░░░░░░░░░░░░░░░░░░` 0/1 (0%) | The old placeholder bundle was removed; Beta 2 art is not yet converted to Xbox IPak form. |
+| Targeted Moon runtime verification | `░░░░░░░░░░░░░░░░░░░░` 0/1 (0%) | User tested the one-module package; it black-screened. |
+| Four-fix Moon runtime verification | `░░░░░░░░░░░░░░░░░░░░` 0/1 (0%) | User tested it; it black-screened. None of the four behaviors could be checked. |
+| Any rebuilt FastFile accepted on console | `░░░░░░░░░░░░░░░░░░░░` 0/3 (0%) | Both earlier `TAffu100` candidates and the `TAffx100` four-fix candidate black-screened. |
 
 ## Why modules are skipped and what comes next
 
@@ -36,7 +49,7 @@ Bars show separate deliverables. Passing file and compiler checks does not mean 
 | Diagnostic probes | 5 modules are investigation tools, not player-facing fixes. | Keep them development-only; do not include them in a gameplay package. |
 | Fog behavior | 3 modules require a missing fog API or a map-specific hook. | Port to an Xbox-supported fog control or add a compatible map hook, then test each affected map. |
 
-These counts cover the 25 excluded Beta 2 script modules. Other Beta 2 changes also modify map assets and platform-specific models, textures, animations, audio, localization, and menus. Those PC files cannot be copied into an Xbox package as-is. The current overlay contains the available Xbox DLC5 map files and earlier Xbox UI/support candidates, but not all Beta 2 asset changes. The next asset work is to compare the remaining changes against Xbox source files, make Xbox-compatible asset edits or rebuilds, and validate them map by map. The [candidate status document](docs/xbox360-test-candidate-status.md) has the detailed module list and manual test checklist.
+These counts cover the 25 excluded Beta 2 script modules from the broad candidate. The four-fix package was a script-only backport; other gameplay changes, map art, UI descriptions, models, textures, animations, audio, and localization remain out. PC files cannot be copied into an Xbox package as-is. Do not test another rebuilt FastFile until its signature/trust path and console loading are established. The [handoff report](docs/handoff-progress-2026-10-12.md) compares this work with the previous agent's state.
 
 ## Compatibility and limitations
 
@@ -46,7 +59,7 @@ The `main` branch is already in this branch's history; no merge from `main` is n
 
 ## Local working files
 
-Use `local-input/` for privately supplied source files and build/test material. Use `package/staging/` with `tools/Build-AuroraPackage.ps1` for general transfer packages. Use `tools/Build-Dlc5TestCandidatePackage.ps1` for the full DLC5/Beta 2 test package and `dist/` for generated packages. These paths are ignored by Git so proprietary game files and local generated packages are not committed.
+Use `local-input/` for privately supplied source files and build/test material. Use `package/staging/` with `tools/Build-AuroraPackage.ps1` for general transfer packages. The regular package builders refuse unvalidated candidates. `tools/Build-Dlc5MoonPlusTestPackage.ps1` produced the four-fix package that black-screened; its explicit `-AllowUnverifiedSignature` option does not make the output test-ready. Do not rebuild or distribute that candidate. The older `tools/Build-Dlc5UiMapTestPackage.ps1` outputs only the rejected June placeholder UI bundle; do not use it as a Beta 2 test build. Keep generated packages in ignored `dist/` so proprietary game files stay out of Git.
 
 Only add files needed for the backport. Keep original game files and backups in their existing locations; do not put them in the repository or its history.
 
